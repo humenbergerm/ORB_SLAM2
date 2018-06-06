@@ -23,6 +23,8 @@
 
 #include <mutex>
 
+#include <unistd.h>
+
 namespace ORB_SLAM2
 {
 
@@ -135,6 +137,7 @@ void Viewer::Run()
         pangolin::FinishFrame();
 
         cv::Mat im = mpFrameDrawer->DrawFrame();
+        cv::resize(im, im, cvSize(im.cols/2, im.rows/2));
         cv::imshow("ORB-SLAM2: Current Frame",im);
         cv::waitKey(mT);
 

@@ -96,6 +96,11 @@ public:
     Frame mCurrentFrame;
     cv::Mat mImGray;
 
+    //Calibration matrix
+    cv::Mat mK;
+    cv::Mat mDistCoef;
+    float mbf;
+
     // Initialization Variables (Monocular)
     std::vector<int> mvIniLastMatches;
     std::vector<int> mvIniMatches;
@@ -180,11 +185,6 @@ protected:
 
     //Map
     Map* mpMap;
-
-    //Calibration matrix
-    cv::Mat mK;
-    cv::Mat mDistCoef;
-    float mbf;
 
     //New KeyFrame rules (according to fps)
     int mMinFrames;

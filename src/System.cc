@@ -25,6 +25,7 @@
 #include <thread>
 #include <pangolin/pangolin.h>
 #include <iomanip>
+#include <unistd.h>
 
 namespace ORB_SLAM2
 {
@@ -315,8 +316,8 @@ void System::Shutdown()
         usleep(5000);
     }
 
-    if(mpViewer)
-        pangolin::BindToContext("ORB-SLAM2: Map Viewer");
+    //if(mpViewer)
+    //    pangolin::BindToContext("ORB-SLAM2: Map Viewer");
 }
 
 void System::SaveTrajectoryTUM(const string &filename)
@@ -414,6 +415,55 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
     f.close();
     cout << endl << "trajectory saved!" << endl;
+}
+
+std::string ZeroPadNumber(int num)
+{
+  std::ostringstream ss;
+  ss << std::setw( 6 ) << std::setfill( '0' ) << num << ".jpg";
+  return ss.str();
+}
+
+void System::SaveKeyFrameTrajectoryNLE(const string &filename)
+{
+  cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
+
+  vector<KeyFrame*> vpKFs = mpMap->GetAllKeyFrames();
+  sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+  // Transform all keyframes so that the first keyframe is at the origin.
+  // After a loop closure the first keyframe might not be at the origin.
+  //cv::Mat Two = vpKFs[0]->GetPoseInverse();
+
+  ofstream f;
+  f.open(filename.c_str());
+
+  f << "imname\tCX\tCY\tCZ\tqw\tqx\tqy\tqz\twidth\theight\tfx\tfy\tcx\tcy\tk1\tk2\tp1\tp2\tk3\tk4\tk5\tk6" << endl;
+
+  f << fixed;
+
+  for(size_t i=0; i<vpKFs.size(); i++)
+  {
+    KeyFrame* pKF = vpKFs[i];
+
+    // pKF->SetPose(pKF->GetPose()*Two);
+
+    if(pKF->isBad())
+      continue;
+
+    cv::Mat R = pKF->GetRotation();
+    vector<float> q = Converter::toQuaternion(R);
+    cv::Mat t = pKF->GetCameraCenter();
+
+    f << ZeroPadNumber((int)pKF->mTimeStamp) << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2) << " "
+      << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " "
+      << pKF->mnMaxX << " " << pKF->mnMaxY << " " << pKF->fx << " " << pKF->fy << " " << pKF->cx << " " << pKF->cy << " "
+      << mpTracker->mDistCoef.at<float>(0) << " " << mpTracker->mDistCoef.at<float>(1) << " " << mpTracker->mDistCoef.at<float>(2) << " " << mpTracker->mDistCoef.at<float>(3) << " " << 0 << " " << 0 << " " << 0 << " " << 0
+      << endl;
+  }
+
+  f.close();
+  cout << endl << "trajectory saved!" << endl;
 }
 
 void System::SaveTrajectoryKITTI(const string &filename)

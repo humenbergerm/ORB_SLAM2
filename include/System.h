@@ -35,6 +35,7 @@
 #include "KeyFrameDatabase.h"
 #include "ORBVocabulary.h"
 #include "Viewer.h"
+#include <unistd.h>
 
 namespace ORB_SLAM2
 {
@@ -105,6 +106,12 @@ public:
     // Call first Shutdown()
     // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
     void SaveKeyFrameTrajectoryTUM(const string &filename);
+
+    // Save keyframe poses in the NLE format.
+    // This method works for all sensor input.
+    // Call first Shutdown()
+    // See format details at: http://vision.in.tum.de/data/datasets/rgbd-dataset
+    void SaveKeyFrameTrajectoryNLE(const string &filename);
 
     // Save camera trajectory in the KITTI dataset format.
     // Only for stereo and RGB-D. This method does not work for monocular.
