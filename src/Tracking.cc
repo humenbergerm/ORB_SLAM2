@@ -236,9 +236,10 @@ cv::Mat Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const d
 }
 
 
-cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
+cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp, const std::string &im_path)
 {
     mImGray = im;
+    mImgPath = im_path;
 
     if(mImGray.channels()==3)
     {
@@ -259,6 +260,8 @@ cv::Mat Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp)
         mCurrentFrame = Frame(mImGray,timestamp,mpIniORBextractor,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
     else
         mCurrentFrame = Frame(mImGray,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth);
+
+    mCurrentFrame.mImgPath = im_path;
 
     Track();
 
@@ -570,6 +573,7 @@ void Tracking::MonocularInitialization()
         if(mCurrentFrame.mvKeys.size()>100)
         {
             mInitialFrame = Frame(mCurrentFrame);
+            mInitialFrame.mImgPath = mCurrentFrame.mImgPath;
             mLastFrame = Frame(mCurrentFrame);
             mvbPrevMatched.resize(mCurrentFrame.mvKeysUn.size());
             for(size_t i=0; i<mCurrentFrame.mvKeysUn.size(); i++)
@@ -641,6 +645,8 @@ void Tracking::CreateInitialMapMonocular()
     KeyFrame* pKFini = new KeyFrame(mInitialFrame,mpMap,mpKeyFrameDB);
     KeyFrame* pKFcur = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
 
+    pKFcur->mImgPath = mCurrentFrame.mImgPath;
+    pKFini->mImgPath = mInitialFrame.mImgPath;
 
     pKFini->ComputeBoW();
     pKFcur->ComputeBoW();
@@ -1067,6 +1073,7 @@ void Tracking::CreateNewKeyFrame()
         return;
 
     KeyFrame* pKF = new KeyFrame(mCurrentFrame,mpMap,mpKeyFrameDB);
+    pKF->mImgPath = mImgPath;
 
     mpReferenceKF = pKF;
     mCurrentFrame.mpReferenceKF = pKF;

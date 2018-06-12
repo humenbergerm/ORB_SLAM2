@@ -108,6 +108,8 @@ public:
     // Frame timestamp.
     double mTimeStamp;
 
+    std::string mImgPath;
+
     // Calibration matrix and OpenCV distortion parameters.
     cv::Mat mK;
     static float fx;

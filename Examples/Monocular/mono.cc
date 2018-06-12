@@ -76,14 +76,14 @@ int main(int argc, char **argv)
       return 1;
     }
 
-#ifdef COMPILEDWITHC11
-    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-#else
-    std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
-#endif
+//#ifdef COMPILEDWITHC11
+//    std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+//#else
+//    std::chrono::monotonic_clock::time_point t1 = std::chrono::monotonic_clock::now();
+//#endif
 
     // Pass the image to the SLAM system
-    SLAM.TrackMonocular(im,tframe);
+    SLAM.TrackMonocular(im, tframe, vstrImageFilenames[ni]);
 
 //#ifdef COMPILEDWITHC11
 //    std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 //  cout << "mean tracking time: " << totaltime/nImages << endl;
 
   // Save camera trajectory
-  SLAM.SaveKeyFrameTrajectoryNLE(string(argv[3]) + "/KeyFrameTrajectory.txt");
+  SLAM.SaveKeyFrameTrajectoryNLE(string(argv[3]) + "/KeyFrameTrajectory.txt", string(argv[3]) + "//KFs");
 
   return 0;
 }

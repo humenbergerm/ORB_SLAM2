@@ -26,6 +26,7 @@
 #include <pangolin/pangolin.h>
 #include <iomanip>
 #include <unistd.h>
+#include <sys/stat.h>
 
 namespace ORB_SLAM2
 {
@@ -216,7 +217,7 @@ cv::Mat System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const doub
     return Tcw;
 }
 
-cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
+cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp, const std::string &im_path)
 {
     if(mSensor!=MONOCULAR)
     {
@@ -258,7 +259,7 @@ cv::Mat System::TrackMonocular(const cv::Mat &im, const double &timestamp)
     }
     }
 
-    cv::Mat Tcw = mpTracker->GrabImageMonocular(im,timestamp);
+    cv::Mat Tcw = mpTracker->GrabImageMonocular(im, timestamp, im_path);
 
     unique_lock<mutex> lock2(mMutexState);
     mTrackingState = mpTracker->mState;
@@ -424,7 +425,7 @@ std::string ZeroPadNumber(int num)
   return ss.str();
 }
 
-void System::SaveKeyFrameTrajectoryNLE(const string &filename)
+void System::SaveKeyFrameTrajectoryNLE(const string &filename, const std::string kf_path)
 {
   cout << endl << "Saving keyframe trajectory to " << filename << " ..." << endl;
 
@@ -435,6 +436,10 @@ void System::SaveKeyFrameTrajectoryNLE(const string &filename)
   // After a loop closure the first keyframe might not be at the origin.
   //cv::Mat Two = vpKFs[0]->GetPoseInverse();
 
+  std::string del_cmd = "rm -rf " + kf_path;
+  system(del_cmd.c_str());
+  const int dir_err = mkdir(kf_path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
   ofstream f;
   f.open(filename.c_str());
 
@@ -444,22 +449,31 @@ void System::SaveKeyFrameTrajectoryNLE(const string &filename)
 
   for(size_t i=0; i<vpKFs.size(); i++)
   {
-    KeyFrame* pKF = vpKFs[i];
+      KeyFrame *pKF = vpKFs[i];
 
-    // pKF->SetPose(pKF->GetPose()*Two);
+      // pKF->SetPose(pKF->GetPose()*Two);
 
-    if(pKF->isBad())
-      continue;
+      if (pKF->isBad())
+          continue;
 
-    cv::Mat R = pKF->GetRotation();
-    vector<float> q = Converter::toQuaternion(R);
-    cv::Mat t = pKF->GetCameraCenter();
+      cv::Mat R = pKF->GetRotation();
+      vector<float> q = Converter::toQuaternion(R);
+      cv::Mat t = pKF->GetCameraCenter();
 
-    f << ZeroPadNumber((int)pKF->mTimeStamp) << setprecision(7) << " " << t.at<float>(0) << " " << t.at<float>(1) << " " << t.at<float>(2) << " "
-      << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " "
-      << pKF->mnMaxX << " " << pKF->mnMaxY << " " << pKF->fx << " " << pKF->fy << " " << pKF->cx << " " << pKF->cy << " "
-      << mpTracker->mDistCoef.at<float>(0) << " " << mpTracker->mDistCoef.at<float>(1) << " " << mpTracker->mDistCoef.at<float>(2) << " " << mpTracker->mDistCoef.at<float>(3) << " " << 0 << " " << 0 << " " << 0 << " " << 0
-      << endl;
+      std::string base_filename = pKF->mImgPath.substr(pKF->mImgPath.find_last_of("/\\") + 1);
+      std::string::size_type const p(base_filename.find_last_of('.'));
+      std::string file_without_extension = base_filename.substr(0, p);
+
+      f << file_without_extension << " " << t.at<float>(0) << " " << t.at<float>(1)
+        << " " << t.at<float>(2) << " " << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " " << pKF->mnMaxX
+        << " " << pKF->mnMaxY << " " << pKF->fx << " " << pKF->fy << " " << pKF->cx << " " << pKF->cy << " "
+        << mpTracker->mDistCoef.at<float>(0) << " " << mpTracker->mDistCoef.at<float>(1) << " "
+        << mpTracker->mDistCoef.at<float>(2) << " " << mpTracker->mDistCoef.at<float>(3) << " " << 0 << " " << 0 << " "
+        << 0 << " " << 0 << endl;
+
+      //std::cout << pKF->mImgPath << std::endl;
+      cv::Mat img = cv::imread(pKF->mImgPath);
+      cv::imwrite(kf_path + "//" + base_filename, img);
   }
 
   f.close();

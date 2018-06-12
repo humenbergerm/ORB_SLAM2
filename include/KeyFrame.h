@@ -54,6 +54,8 @@ public:
     cv::Mat GetRotation();
     cv::Mat GetTranslation();
 
+    std::string mImgPath;
+
     // Bag of Words Representation
     void ComputeBoW();
 
