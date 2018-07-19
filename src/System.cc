@@ -27,6 +27,7 @@
 #include <iomanip>
 #include <unistd.h>
 #include <sys/stat.h>
+#include "opencv2/core/eigen.hpp"
 
 namespace ORB_SLAM2
 {
@@ -447,6 +448,8 @@ void System::SaveKeyFrameTrajectoryNLE(const string &filename, const std::string
 
   f << fixed;
 
+  Eigen::Quaternionf qtr(0.5, 0.5, -0.5, 0.5); // Euler angles: order x,y,z -> 90deg,0,90deg
+
   for(size_t i=0; i<vpKFs.size(); i++)
   {
       KeyFrame *pKF = vpKFs[i];
@@ -456,15 +459,19 @@ void System::SaveKeyFrameTrajectoryNLE(const string &filename, const std::string
       if (pKF->isBad())
           continue;
 
-      cv::Mat R = pKF->GetRotation();
-      vector<float> q = Converter::toQuaternion(R);
+      // convert to NLK camera coordinate format
+      cv::Mat Rq;
+      cv::eigen2cv(qtr.toRotationMatrix(), Rq);
+      cv::Mat Rot = pKF->GetRotation();
+      cv::Mat R = Rq.t() * Rot;
+      vector<float> q = Converter::toQuaternion(R.t());
       cv::Mat t = pKF->GetCameraCenter();
 
       std::string base_filename = pKF->mImgPath.substr(pKF->mImgPath.find_last_of("/\\") + 1);
       std::string::size_type const p(base_filename.find_last_of('.'));
-      std::string file_without_extension = base_filename.substr(0, p);
+      //std::string file_without_extension = base_filename.substr(0, p);
 
-      f << file_without_extension << " " << t.at<float>(0) << " " << t.at<float>(1)
+      f << base_filename << " " << t.at<float>(0) << " " << t.at<float>(1)
         << " " << t.at<float>(2) << " " << q[3] << " " << q[0] << " " << q[1] << " " << q[2] << " " << pKF->mnMaxX
         << " " << pKF->mnMaxY << " " << pKF->fx << " " << pKF->fy << " " << pKF->cx << " " << pKF->cy << " "
         << mpTracker->mDistCoef.at<float>(0) << " " << mpTracker->mDistCoef.at<float>(1) << " "
